@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+openai-whisper
+yt-dlp
+python-multipart
+torch --index-url https://download.pytorch.org/whl/cu118
+numpy
+anyascii

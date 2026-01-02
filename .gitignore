@@ -1,0 +1,35 @@
+# System
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+
+# Python / Backend
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+*.log
+backend/downloads/
+backend/temp_*
+backend/*.mp3
+
+# Node / Frontend
+node_modules/
+npm-debug.log
+yarn-error.log
+.next/
+out/
+build/
+dist/
+
+# Project specific
+downloads/
+temp_*.mp3
+*.mp4
