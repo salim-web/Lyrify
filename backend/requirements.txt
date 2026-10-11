@@ -8,3 +8,4 @@ numpy
 anyascii
 google-generativeai
 python-dotenv
+gradio

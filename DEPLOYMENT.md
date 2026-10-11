@@ -17,9 +17,9 @@ Hugging Face Spaces provides a free Docker environment with **16 GB of RAM** and
 3. Fill in the details:
    - **Space name**: `lyrify-backend` (or your preferred name)
    - **License**: `mit` or `apache-2.0`
-   - **Space SDK**: Select **Docker** (choose **Blank**)
-   - **Space hardware**: Select **CPU basic • 2 vCPU • 16 GB • Free**
-   - **Visibility**: Public (or Private)
+   - **Space SDK**: Select **Gradio** (Template: **Blank**) — *This is 100% Free!*
+   - **Space hardware**: Select **CPU Basic** (or **ZeroGPU Free** for free Nvidia GPU acceleration!)
+   - **Visibility**: **Public** (Important: Must be Public so your Vercel frontend and friends can access it)
 4. Click **Create Space**.
 
 ### Step 1.2: Add Your Gemini API Key Secret
@@ -31,14 +31,13 @@ Hugging Face Spaces provides a free Docker environment with **16 GB of RAM** and
 4. Click **Save**.
 
 ### Step 1.3: Push Backend Code to Hugging Face
-In your terminal, you can push the `backend/` directory directly to your Hugging Face Space repository:
+In your terminal, push the `backend/` directory directly to your Hugging Face Space repository:
 
 ```bash
 # 1. Navigate to the backend directory
 cd /home/salim/projects/Lyrify/backend
 
-# 2. Initialize a git repository inside backend (if not already a git subrepo)
-# Or create a dedicated branch/repo:
+# 2. Initialize a git repository inside backend
 git init
 git checkout -b main
 
@@ -46,11 +45,14 @@ git checkout -b main
 # Replace <YOUR_HF_USERNAME> and <YOUR_SPACE_NAME> with your details:
 git remote add space https://huggingface.co/spaces/<YOUR_HF_USERNAME>/<YOUR_SPACE_NAME>
 
-# 4. Add files, commit, and push
-git add Dockerfile .dockerignore main.py requirements.txt
-git commit -m "Deploy Lyrify backend to Hugging Face Spaces"
+# 4. Add the required files:
+# - app.py (Entrypoint that runs FastAPI + Gradio)
+# - packages.txt (Installs FFmpeg on Hugging Face)
+# - main.py & requirements.txt
+git add app.py main.py packages.txt requirements.txt
+git commit -m "Deploy Lyrify FastAPI backend with Gradio SDK"
 
-# When prompted, enter your Hugging Face username and your HF Access Token (write token):
+# 5. Push to Hugging Face (enter your HF username and your HF Access Token with Write permissions)
 git push --force space main
 ```
 
@@ -114,3 +116,4 @@ git push origin master
 | **Hugging Face** | Backend (FastAPI + Docker) | 16 GB RAM, 2 vCPUs, FFmpeg | **$0 / month** (Free CPU Space) |
 | **Google Gemini** | AI Transcription Engine | Gemini 2.5 Flash Free Tier | **$0 / month** (Free tier rate limits) |
 | **Total** | Full Platform | Complete Production Deployment | **$0 / month (100% Free)** |
+
