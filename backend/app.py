@@ -10,6 +10,19 @@ try:
 except Exception:
     pass
 
+# Prevent torchaudio C++ ABI load failure on cloud platforms (Render, Hugging Face Spaces)
+try:
+    import torchaudio._extension.utils as _tau
+    _orig_load_lib = _tau._load_lib
+    def _safe_load_lib(lib):
+        try:
+            return _orig_load_lib(lib)
+        except Exception:
+            return False
+    _tau._load_lib = _safe_load_lib
+except Exception:
+    pass
+
 from main import app
 
 if __name__ == "__main__":
