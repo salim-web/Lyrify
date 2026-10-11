@@ -3,7 +3,7 @@ uvicorn
 openai-whisper
 yt-dlp
 python-multipart
-torch --index-url https://download.pytorch.org/whl/cu118
+torch
 numpy
 anyascii
 google-generativeai
