@@ -14,7 +14,7 @@ import subprocess
 import socket
 import json
 import google.generativeai as genai
-from fastapi import FastAPI, UploadFile, File, HTTPException, Form
+from fastapi import FastAPI, UploadFile, File, HTTPException, Form, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -240,7 +240,7 @@ async def transcribe_upload(file: UploadFile = File(...), mode: str = Form("onli
 import uuid
 
 @app.post("/transcribe/link")
-async def transcribe_link(request: LinkRequest):
+async def transcribe_link(request: LinkRequest, http_request: Request):
     url = request.url
     
     # Generate unique filename to avoid conflicts/locking
@@ -271,13 +271,16 @@ async def transcribe_link(request: LinkRequest):
         is_romanize = request.romanize
         print(f"Processing link in {mode} mode (romanize={is_romanize})")
 
+        base_url = os.getenv("BASE_URL", str(http_request.base_url).rstrip("/"))
+        audio_url = f"{base_url}/static/{output_filename}"
+
         if mode == "online" and check_connection():
             try:
                 print("Online mode: Using Gemini...")
                 lyrics = generate_lyrics_gemini(output_path, romanize=is_romanize)
                 return {
                     "lyrics": lyrics,
-                    "audio_url": f"http://localhost:8000/static/{output_filename}"
+                    "audio_url": audio_url
                 }
             except Exception as e:
                 print(f"Gemini transcription failed: {e}")
@@ -291,7 +294,7 @@ async def transcribe_link(request: LinkRequest):
         
         return {
             "lyrics": format_transcript(result, romanize=is_romanize), 
-            "audio_url": f"http://localhost:8000/static/{output_filename}"
+            "audio_url": audio_url
         }
 
     except Exception as e:

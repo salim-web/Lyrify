@@ -152,3 +152,8 @@ npm run dev
 - [ ] Implement an automated cache for processed songs (e.g., store lyrics JSON keyed by audio hash or YouTube URL) so re-playing the same song doesn't re-trigger transcription costs or compute.
 - [ ] Implement scheduled cleanup for `backend/downloads/`.
 
+### Priority 4: Production Cloud Deployment (Vercel + Hugging Face Spaces)
+- [ ] Deploy backend to free Hugging Face Space using `backend/Dockerfile` and configure `GEMINI_API_KEY` secret.
+- [ ] Deploy frontend to Vercel with Root Directory `frontend` and set `NEXT_PUBLIC_API_URL` to the Hugging Face Space URL.
+- [ ] Refer to [DEPLOYMENT.md](file:///home/salim/projects/Lyrify/DEPLOYMENT.md) for step-by-step instructions.
+

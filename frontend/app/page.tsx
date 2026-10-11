@@ -6,6 +6,8 @@ import { Upload, Link as LinkIcon, Music, Loader2 } from "lucide-react";
 import LyricsView from "@/components/LyricsView";
 import Player from "@/components/Player";
 
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/+$/, "");
+
 export default function Home() {
   const [lyrics, setLyrics] = useState([]);
   const [audioSrc, setAudioSrc] = useState<string | null>(null);
@@ -41,7 +43,7 @@ export default function Home() {
     formData.append("mode", transcribeMode);
 
     try {
-      const response = await axios.post("http://localhost:8000/transcribe/upload", formData, {
+      const response = await axios.post(`${API_BASE_URL}/transcribe/upload`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setLyrics(response.data.lyrics);
@@ -65,19 +67,22 @@ export default function Home() {
     setAudioSrc(null); // Clear previous
 
     try {
-      const response = await axios.post("http://localhost:8000/transcribe/link", {
+      const response = await axios.post(`${API_BASE_URL}/transcribe/link`, {
         url,
         romanize,
         mode: transcribeMode
       });
       setLyrics(response.data.lyrics);
 
-      // Use the unique URL returned by the backend
+      // Use the unique URL returned by the backend (handling relative or absolute)
       if (response.data.audio_url) {
-        setAudioSrc(response.data.audio_url);
+        const fullAudioUrl = response.data.audio_url.startsWith("http")
+          ? response.data.audio_url
+          : `${API_BASE_URL}${response.data.audio_url.startsWith("/") ? "" : "/"}${response.data.audio_url}`;
+        setAudioSrc(fullAudioUrl);
       } else {
-        // Fallback (shouldn't happen with new backend)
-        setAudioSrc(`http://localhost:8000/static/temp_download.mp3?t=${Date.now()}`);
+        // Fallback
+        setAudioSrc(`${API_BASE_URL}/static/temp_download.mp3?t=${Date.now()}`);
       }
 
     } catch (error: any) {

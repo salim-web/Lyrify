@@ -214,4 +214,15 @@ type LyricsResponse = LyricLine[];
 | **GPU Acceleration** | `cuda:0` | NVIDIA GeForce GTX 1650 | **ACTIVE** | PyTorch CUDA verified, Whisper `small` loaded in VRAM |
 | **Whisper Cache** | `~/.cache/whisper/small.pt` | OpenAI Whisper Weights (462MB) | **CACHED & READY** | Verified SHA256 integrity and local initialization |
 
+---
+
+## 8. Free Production Cloud Deployment (Vercel + Hugging Face)
+
+| Component | Target Platform | Specs / Cost | Configuration |
+| :--- | :--- | :--- | :--- |
+| **Frontend** | **Vercel** | Free Hobby tier, worldwide Edge CDN | Root Directory: `frontend`, Env: `NEXT_PUBLIC_API_URL` |
+| **Backend** | **Hugging Face Spaces** | Free Docker tier, 16 GB RAM, 2 vCPUs | Container: `backend/Dockerfile`, Port: `7860`, Secret: `GEMINI_API_KEY` |
+| **Guide** | Project Root | Step-by-step instructions | See [DEPLOYMENT.md](file:///home/salim/projects/Lyrify/DEPLOYMENT.md) |
+
+
 
