@@ -169,7 +169,7 @@ export default function Player({
                     max={duration || 0}
                     value={currentTime}
                     onChange={handleSeek}
-                    className="flex-1 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-white hover:accent-pink-500 transition-all"
+                    className="flex-1 h-1 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-white hover:accent-emerald-400 transition-all"
                 />
 
                 <span className="text-xs text-gray-400 w-10">
