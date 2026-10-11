@@ -18,6 +18,7 @@ export default function Home() {
   const [romanize, setRomanize] = useState(false);
   const [language, setLanguage] = useState<string>("");
   const [seekTo, setSeekTo] = useState<number | null>(null);
+  const [transcribeMode, setTranscribeMode] = useState<"online" | "offline">("online");
 
   const handleSeek = (time: number) => {
     setSeekTo(time);
@@ -37,15 +38,17 @@ export default function Home() {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("romanize", romanize.toString());
+    formData.append("mode", transcribeMode);
 
     try {
       const response = await axios.post("http://localhost:8000/transcribe/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setLyrics(response.data.lyrics);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Upload error:", error);
-      alert("Failed to transcribe audio.");
+      const msg = error.response?.data?.detail || "Failed to transcribe audio.";
+      alert(`Error: ${msg}`);
     } finally {
       setIsLoading(false);
     }
@@ -64,7 +67,8 @@ export default function Home() {
     try {
       const response = await axios.post("http://localhost:8000/transcribe/link", {
         url,
-        romanize
+        romanize,
+        mode: transcribeMode
       });
       setLyrics(response.data.lyrics);
 
@@ -76,9 +80,10 @@ export default function Home() {
         setAudioSrc(`http://localhost:8000/static/temp_download.mp3?t=${Date.now()}`);
       }
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Link error:", error);
-      alert("Failed to process link. Ensure backend is running.");
+      const msg = error.response?.data?.detail || "Failed to process link. Ensure backend is running.";
+      alert(`Error: ${msg}`);
     } finally {
       setIsLoading(false);
     }
@@ -152,6 +157,49 @@ export default function Home() {
               Experience your music with word-by-word time-synced lyrics.
             </p>
 
+            {/* Toggles */}
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-3 mb-2">
+              <div className="bg-white/5 p-1 rounded-xl border border-white/10 flex gap-1">
+                <button
+                  onClick={() => setTranscribeMode("online")}
+                  className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                    transcribeMode === "online" 
+                      ? "bg-pink-600 text-white shadow-lg shadow-pink-600/20" 
+                      : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  Online (Gemini)
+                </button>
+                <button
+                  onClick={() => setTranscribeMode("offline")}
+                  className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${
+                    transcribeMode === "offline" 
+                      ? "bg-gray-700 text-white shadow-lg" 
+                      : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  Offline (Whisper)
+                </button>
+              </div>
+
+              <div 
+                className={`bg-white/5 p-1 py-2 px-4 rounded-xl border transition-all cursor-pointer flex items-center gap-2 select-none ${
+                  romanize ? "border-pink-500 bg-pink-500/10" : "border-white/10 hover:bg-white/10"
+                }`}
+                onClick={() => setRomanize(!romanize)}
+              >
+                <input 
+                  type="checkbox" 
+                  checked={romanize} 
+                  readOnly
+                  className="w-4 h-4 accent-pink-500 cursor-pointer"
+                />
+                <span className={`text-sm font-bold ${romanize ? "text-pink-400" : "text-gray-400"}`}>
+                  Romanize (e.g. Hinglish)
+                </span>
+              </div>
+            </div>
+
             <div className="flex flex-col gap-6 w-full max-w-md mx-auto">
               {/* File Upload */}
               <label className="flex items-center justify-center gap-3 w-full p-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 cursor-pointer transition-all group">
@@ -191,8 +239,12 @@ export default function Home() {
         {isLoading && (
           <div className="flex flex-col items-center gap-4 animate-pulse">
             <Loader2 className="w-12 h-12 animate-spin text-pink-500" />
-            <p className="text-lg font-medium text-gray-300">Generating Lyrics...</p>
-            <p className="text-sm text-gray-500">This might take a moment.</p>
+            <p className="text-lg font-medium text-gray-300">
+              Generating Lyrics with {transcribeMode === "online" ? "Gemini 2.5 Flash" : "Local Whisper"}...
+            </p>
+            <p className="text-sm text-gray-500">
+              {transcribeMode === "online" ? "Processing via Cloud API" : "Processing locally on your device"}
+            </p>
           </div>
         )}
 
