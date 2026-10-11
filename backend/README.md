@@ -12,3 +12,4 @@ pinned: false
 # Lyrify Backend API
 
 This Hugging Face Space powers the **Lyrify** AI-synced lyrics platform.
+

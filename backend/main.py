@@ -124,10 +124,27 @@ if not os.path.exists("downloads"):
 
 app.mount("/static", StaticFiles(directory="downloads"), name="static")
 
-# Load model locally (global variable to cache it)
-# "small" model fits in 2GB VRAM, good balance for GTX 1650
-MODEL_SIZE = "small"
+# Adaptive model size: "tiny" on memory-constrained cloud hosts (Render 512MB RAM) or "small" locally
+MODEL_SIZE = os.getenv("WHISPER_MODEL", "tiny" if os.getenv("RENDER") else "small")
 model = None
+
+# ZeroGPU support for Hugging Face Spaces
+try:
+    import spaces
+    has_spaces = True
+except (ImportError, Exception):
+    has_spaces = False
+
+def _transcribe_func(whisper_model, audio_path):
+    return whisper_model.transcribe(audio_path, word_timestamps=True)
+
+if has_spaces:
+    try:
+        run_whisper_transcribe = spaces.GPU(_transcribe_func)
+    except Exception:
+        run_whisper_transcribe = _transcribe_func
+else:
+    run_whisper_transcribe = _transcribe_func
 
 def get_model():
     global model
@@ -141,8 +158,12 @@ def get_model():
 
 @app.on_event("startup")
 async def startup_event():
-    # Preload model on startup
-    get_model()
+    # Only preload if PRELOAD_MODEL is explicitly 'true'; lazy load on-demand to protect cloud RAM (e.g. Render 512MB limit)
+    if os.getenv("PRELOAD_MODEL", "false").lower() == "true":
+        try:
+            get_model()
+        except Exception as e:
+            print(f"Model startup preload warning: {e}")
 
 @app.get("/")
 def read_root():
@@ -224,7 +245,7 @@ async def transcribe_upload(file: UploadFile = File(...), mode: str = Form("onli
             
         model = get_model()
         # Enable word timestamps!
-        result = model.transcribe(temp_filename, word_timestamps=True)
+        result = run_whisper_transcribe(model, temp_filename)
         
         return {"lyrics": format_transcript(result, romanize=is_romanize)}
 
@@ -290,7 +311,7 @@ async def transcribe_link(request: LinkRequest, http_request: Request):
 
         print("Transcribing Downloaded File...")
         model = get_model()
-        result = model.transcribe(output_path, word_timestamps=True)
+        result = run_whisper_transcribe(model, output_path)
         
         return {
             "lyrics": format_transcript(result, romanize=is_romanize), 
