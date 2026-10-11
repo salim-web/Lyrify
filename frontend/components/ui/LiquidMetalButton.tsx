@@ -315,9 +315,9 @@ export default function LiquidMetalButton({
     };
 
     const padClass =
-        size === "sm" ? "px-3 py-1.5 text-xs gap-2" :
-        size === "lg" ? "px-6 py-3.5 text-base gap-3.5" :
-        "px-4 py-2.5 text-sm gap-2.5";
+        size === "sm" ? "px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs gap-1.5 sm:gap-2" :
+        size === "lg" ? "px-4 sm:px-6 py-3 sm:py-3.5 text-xs sm:text-base gap-2 sm:gap-3.5" :
+        "px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm gap-2 sm:gap-2.5";
 
     const baseSurface =
         variant === "emerald"
@@ -421,7 +421,7 @@ export default function LiquidMetalButton({
 
             {/* Label / Children */}
             {(label || children) && (
-                <span className="relative z-10 font-semibold tracking-tight whitespace-nowrap">
+                <span className="relative z-10 font-semibold tracking-tight truncate max-w-full">
                     {label || children}
                 </span>
             )}

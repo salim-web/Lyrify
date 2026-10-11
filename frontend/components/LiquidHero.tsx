@@ -345,7 +345,7 @@ export default function LiquidHero({ children }: LiquidHeroProps) {
     return (
         <div
             ref={containerRef}
-            className="relative w-full min-h-screen flex flex-col items-center justify-center overflow-hidden bg-black text-white"
+            className="relative w-full min-h-screen flex flex-col items-center justify-center overflow-x-hidden bg-black text-white"
             onPointerMove={handlePointerMove}
             onPointerLeave={handlePointerLeave}
         >
@@ -361,7 +361,7 @@ export default function LiquidHero({ children }: LiquidHeroProps) {
             <div className="absolute inset-x-0 bottom-0 h-48 pointer-events-none bg-gradient-to-t from-black to-transparent" />
 
             {/* Foreground Ingestion Content */}
-            <div className="relative z-10 w-full flex flex-col items-center justify-center p-4">
+            <div className="relative z-10 w-full flex flex-col items-center justify-center p-3 sm:p-4">
                 {children}
             </div>
         </div>

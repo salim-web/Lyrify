@@ -65,7 +65,7 @@ export default function LyricsView({
       {/* 3. Original Lyrics Content Layer */}
       <div
         ref={containerRef}
-        className="relative z-10 w-full max-w-3xl h-full overflow-y-auto no-scrollbar px-6 py-20 space-y-8 text-left"
+        className="relative z-10 w-full max-w-3xl h-full overflow-y-auto no-scrollbar px-4 sm:px-6 py-12 sm:py-20 space-y-6 sm:space-y-8 text-left"
       >
         {lyrics.map((line, index) => {
           const isActive = index === activeLineIndex;
@@ -81,13 +81,13 @@ export default function LyricsView({
               }}
               transition={{ duration: 0.4 }}
               className={clsx(
-                "text-3xl md:text-5xl font-bold transition-colors duration-500",
+                "text-2xl sm:text-4xl md:text-5xl font-bold transition-colors duration-500",
                 isActive ? "text-white" : "text-gray-400 hover:text-gray-200"
               )}
             >
               {line.words && line.words.length > 0 ? (
                 // Word-by-word highlighting
-                <span className="flex flex-wrap gap-x-3 gap-y-1">
+                <span className="flex flex-wrap gap-x-2 sm:gap-x-3 gap-y-1">
                   {line.words.map((word, wIndex) => {
                     // Determine word state
                     const isPastWord = currentTime > word.end;

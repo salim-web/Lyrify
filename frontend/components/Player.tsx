@@ -135,31 +135,31 @@ export default function Player({
                 }}
             />
 
-            <div className="max-w-4xl mx-auto flex items-center gap-4">
-                <div className="flex items-center gap-4">
+            <div className="max-w-4xl mx-auto flex items-center gap-2 sm:gap-4">
+                <div className="flex items-center gap-2 sm:gap-4">
                     <button
                         onClick={skipBackward}
-                        className="text-gray-400 hover:text-white transition-colors"
+                        className="text-gray-400 hover:text-white transition-colors p-1"
                     >
-                        <SkipBack size={24} />
+                        <SkipBack className="w-5 h-5 sm:w-6 sm:h-6" />
                     </button>
 
                     <button
                         onClick={togglePlay}
-                        className="p-3 bg-white text-black rounded-full hover:scale-105 transition-transform"
+                        className="p-2.5 sm:p-3 bg-white text-black rounded-full hover:scale-105 transition-transform shrink-0"
                     >
-                        {isPlaying ? <Pause size={24} fill="black" /> : <Play size={24} fill="black" />}
+                        {isPlaying ? <Pause className="w-5 h-5 sm:w-6 sm:h-6 fill-black" /> : <Play className="w-5 h-5 sm:w-6 sm:h-6 fill-black" />}
                     </button>
 
                     <button
                         onClick={skipForward}
-                        className="text-gray-400 hover:text-white transition-colors"
+                        className="text-gray-400 hover:text-white transition-colors p-1"
                     >
-                        <SkipForward size={24} />
+                        <SkipForward className="w-5 h-5 sm:w-6 sm:h-6" />
                     </button>
                 </div>
 
-                <span className="text-xs text-gray-400 w-10 text-right">
+                <span className="text-[10px] sm:text-xs text-gray-400 w-8 sm:w-10 text-right font-mono">
                     {formatTime(currentTime)}
                 </span>
 
@@ -172,7 +172,7 @@ export default function Player({
                     className="flex-1 h-1 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-white hover:accent-emerald-400 transition-all"
                 />
 
-                <span className="text-xs text-gray-400 w-10">
+                <span className="text-[10px] sm:text-xs text-gray-400 w-8 sm:w-10 font-mono">
                     {formatTime(duration)}
                 </span>
             </div>

@@ -181,44 +181,45 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-black text-white font-sans selection:bg-neutral-800 selection:text-white flex flex-col items-center justify-center relative overflow-hidden">
+    <main className="min-h-screen bg-black text-white font-sans selection:bg-neutral-800 selection:text-white flex flex-col items-center justify-center relative overflow-x-hidden">
       {/* Toast Notification */}
       {copyFeedback && (
-        <div className="fixed top-6 z-50 px-4 py-2 rounded-full bg-neutral-900/95 border border-white/20 text-white text-xs font-mono tracking-wide shadow-2xl backdrop-blur-md animate-fade-in flex items-center gap-2">
+        <div className="fixed top-4 sm:top-6 z-50 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-neutral-900/95 border border-white/20 text-white text-[11px] sm:text-xs font-mono tracking-wide shadow-2xl backdrop-blur-md animate-fade-in flex items-center gap-2">
           <Check className="w-3.5 h-3.5 text-emerald-400" />
           {copyFeedback}
         </div>
       )}
 
-      {/* 1. Ingestion / Landing Page with LiquidHero (Image 1 Grassy Hill Terrain) */}
+      {/* 1. Ingestion / Landing Page with LiquidHero (Procedural Horizon with New Color Scheme) */}
       {!audioSrc && !isLoading && (
         <LiquidHero>
-          <div className="w-full max-w-2xl mx-auto flex flex-col items-center text-center space-y-9 py-12 px-4">
+          <div className="w-full max-w-xl mx-auto flex flex-col items-center text-center space-y-5 sm:space-y-8 py-4 sm:py-10 px-3 sm:px-4">
             {/* Title & Badge */}
-            <div className="space-y-3">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-mono tracking-widest text-neutral-300 uppercase backdrop-blur-md">
-                <Music className="w-3.5 h-3.5 text-emerald-400" />
+            <div className="space-y-2 sm:space-y-3">
+              <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] sm:text-xs font-mono tracking-wider text-neutral-300 uppercase backdrop-blur-md">
+                <Music className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-400" />
                 Audio Alignment & Transcription
               </div>
-              <h1 className="text-6xl sm:text-7xl font-extrabold tracking-tight bg-gradient-to-b from-white via-neutral-100 to-neutral-400 bg-clip-text text-transparent drop-shadow-sm select-none">
+              <h1 className="text-4xl sm:text-7xl font-extrabold tracking-tight bg-gradient-to-b from-white via-neutral-100 to-neutral-400 bg-clip-text text-transparent drop-shadow-sm select-none">
                 Lyrify
               </h1>
-              <p className="text-base sm:text-lg text-neutral-400 max-w-md mx-auto leading-relaxed">
+              <p className="text-xs sm:text-base text-neutral-400 max-w-md mx-auto leading-relaxed px-1">
                 Transform any track into fluid, word-synced karaoke lyrics with forced alignment and Romanization.
               </p>
             </div>
 
             {/* Controls Bar: Engine Selector & Romanization */}
-            <div className="flex flex-wrap items-center justify-center gap-3 w-full">
-              <div className="flex items-center gap-2 p-1 rounded-2xl bg-neutral-900/80 border border-white/10 backdrop-blur-md shadow-inner">
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 w-full">
+              <div className="flex items-center gap-1 sm:gap-2 p-1 rounded-2xl bg-neutral-900/80 border border-white/10 backdrop-blur-md shadow-inner">
                 <LiquidMetalButton
                   size="sm"
                   variant={transcribeMode === "online" ? "light" : "dark"}
                   active={transcribeMode === "online"}
                   onClick={() => setTranscribeMode("online")}
-                  icon={<Sparkles className="w-3.5 h-3.5 text-amber-400" />}
+                  icon={<Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-400" />}
                 >
-                  Online (Gemini 2.5)
+                  <span className="hidden sm:inline">Online (Gemini 2.5)</span>
+                  <span className="sm:hidden">Online (Gemini)</span>
                 </LiquidMetalButton>
 
                 <LiquidMetalButton
@@ -226,9 +227,10 @@ export default function Home() {
                   variant={transcribeMode === "offline" ? "emerald" : "dark"}
                   active={transcribeMode === "offline"}
                   onClick={() => setTranscribeMode("offline")}
-                  icon={<Radio className="w-3.5 h-3.5 text-emerald-400" />}
+                  icon={<Radio className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-400" />}
                 >
-                  Offline (Whisper)
+                  <span className="hidden sm:inline">Offline (Whisper)</span>
+                  <span className="sm:hidden">Offline (Whisper)</span>
                 </LiquidMetalButton>
               </div>
 
@@ -237,29 +239,30 @@ export default function Home() {
                 variant={romanize ? "emerald" : "dark"}
                 active={romanize}
                 onClick={() => setRomanize(!romanize)}
-                icon={romanize ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : undefined}
+                icon={romanize ? <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-400" /> : undefined}
               >
-                Romanize (Hinglish)
+                <span className="hidden sm:inline">Romanize (Hinglish)</span>
+                <span className="sm:hidden">Romanize</span>
               </LiquidMetalButton>
             </div>
 
             {/* Unsynced Lyrics Collapsible Card */}
-            <div className="w-full max-w-lg">
+            <div className="w-full max-w-md">
               <button
                 type="button"
                 onClick={() => setShowLyricsInput(!showLyricsInput)}
-                className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl bg-neutral-900/60 hover:bg-neutral-900/90 border border-white/10 text-xs font-semibold text-neutral-300 transition-all backdrop-blur-md group"
+                className="w-full flex items-center justify-between px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-neutral-900/60 hover:bg-neutral-900/90 border border-white/10 text-[11px] sm:text-xs font-semibold text-neutral-300 transition-all backdrop-blur-md group"
               >
                 <span className="flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-neutral-300 group-hover:scale-110 transition-transform" />
+                  <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-300 group-hover:scale-110 transition-transform" />
                   Paste Unsynced Lyrics (Optional)
                   {lyricsInput.trim() && (
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
                   )}
                 </span>
-                <span className="text-neutral-400 text-xs font-normal flex items-center gap-1.5">
+                <span className="text-neutral-400 text-[11px] sm:text-xs font-normal flex items-center gap-1 sm:gap-1.5">
                   {lyricsInput.trim() ? "Lyrics Staged" : showLyricsInput ? "Hide" : "Add Lyrics"}
-                  {showLyricsInput ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                  {showLyricsInput ? <ChevronUp className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> : <ChevronDown className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
                 </span>
               </button>
 
@@ -268,14 +271,14 @@ export default function Home() {
                   <textarea
                     value={lyricsInput}
                     onChange={(e) => setLyricsInput(e.target.value)}
-                    placeholder="Paste original lyrics here for strict forced alignment (timing alignment with zero hallucination)..."
-                    rows={4}
-                    className="w-full p-3 rounded-xl bg-black/70 border border-white/10 focus:border-white/30 focus:outline-none text-xs text-neutral-200 placeholder-neutral-500 transition-colors resize-y font-mono"
+                    placeholder="Paste original lyrics here for strict forced alignment..."
+                    rows={3}
+                    className="w-full p-2.5 sm:p-3 rounded-xl bg-black/70 border border-white/10 focus:border-white/30 focus:outline-none text-xs text-neutral-200 placeholder-neutral-500 transition-colors resize-y font-mono"
                   />
                   {lyricsInput.trim() && (
-                    <div className="flex justify-between items-center text-xs text-neutral-400 px-1">
+                    <div className="flex justify-between items-center text-[11px] sm:text-xs text-neutral-400 px-1">
                       <span className="text-emerald-400 font-medium flex items-center gap-1">
-                        <Check className="w-3 h-3" /> Forced Alignment mode active
+                        <Check className="w-3 h-3" /> Forced Alignment active
                       </span>
                       <button
                         type="button"
@@ -291,7 +294,7 @@ export default function Home() {
             </div>
 
             {/* Ingestion Triggers: Upload & YouTube Link */}
-            <div className="flex flex-col gap-4 w-full max-w-lg">
+            <div className="flex flex-col gap-3 sm:gap-4 w-full max-w-md">
               {/* Hidden File Input */}
               <input
                 ref={fileInputRef}
@@ -305,40 +308,41 @@ export default function Home() {
               <LiquidMetalButton
                 size="lg"
                 variant="dark"
-                icon={<Upload className="w-5 h-5 text-white" />}
+                icon={<Upload className="w-4 h-4 sm:w-5 sm:h-5 text-white" />}
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full justify-center py-4 text-white"
+                className="w-full justify-center py-2.5 sm:py-3.5 text-white"
               >
-                Upload Audio File (MP3, WAV, M4A)
+                <span className="hidden sm:inline">Upload Audio File (MP3, WAV, M4A)</span>
+                <span className="sm:hidden">Upload Audio File</span>
               </LiquidMetalButton>
 
               {/* Divider */}
-              <div className="relative py-1">
+              <div className="relative py-0.5 sm:py-1">
                 <div className="absolute inset-0 flex items-center">
                   <span className="w-full border-t border-white/10" />
                 </div>
-                <div className="relative flex justify-center text-[10px] tracking-wider uppercase">
-                  <span className="bg-black px-3 text-neutral-500 font-mono">Or paste audio link</span>
+                <div className="relative flex justify-center text-[9px] sm:text-[10px] tracking-wider uppercase">
+                  <span className="bg-black px-2.5 sm:px-3 text-neutral-500 font-mono">Or paste audio link</span>
                 </div>
               </div>
 
               {/* Link Input Form */}
-              <form onSubmit={handleLinkSubmit} className="flex gap-2">
-                <div className="relative flex-1">
-                  <LinkIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+              <form onSubmit={handleLinkSubmit} className="flex gap-2 w-full">
+                <div className="relative flex-1 min-w-0">
+                  <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                   <input
                     name="url"
                     type="url"
                     required
-                    placeholder="Paste YouTube or Direct Audio URL"
-                    className="w-full pl-10 pr-4 py-3 rounded-2xl bg-neutral-900/70 border border-white/10 focus:border-white/30 focus:outline-none transition-colors text-sm text-neutral-200 placeholder-neutral-500 backdrop-blur-md"
+                    placeholder="Paste YouTube or Audio URL"
+                    className="w-full pl-9 sm:pl-10 pr-3 py-2.5 sm:py-3 rounded-2xl bg-neutral-900/70 border border-white/10 focus:border-white/30 focus:outline-none transition-colors text-xs sm:text-sm text-neutral-200 placeholder-neutral-500 backdrop-blur-md"
                   />
                 </div>
                 <LiquidMetalButton
                   type="submit"
                   size="md"
                   variant="light"
-                  className="px-6"
+                  className="px-4 sm:px-6 shrink-0"
                 >
                   Go
                 </LiquidMetalButton>
@@ -358,13 +362,13 @@ export default function Home() {
 
       {/* 3. Lyrics View & Audio Playback Screen with Animated ShaderFlow behind Frosted Glass */}
       {audioSrc && !isLoading && (
-        <div className="w-full max-w-5xl flex flex-col items-center justify-between min-h-screen p-4 sm:p-6 pb-24">
+        <div className="w-full max-w-5xl flex flex-col items-center justify-between min-h-screen p-3 sm:p-6 pb-24 sm:pb-24">
           {/* Header Controls: Back & Export Actions */}
-          <div className="w-full flex flex-wrap justify-between items-center gap-3 mb-4">
+          <div className="w-full flex flex-wrap justify-between items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
             <LiquidMetalButton
               size="sm"
               variant="ghost"
-              icon={<ArrowLeft className="w-4 h-4" />}
+              icon={<ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
               onClick={() => {
                 setAudioSrc(null);
                 setLyrics([]);
@@ -375,48 +379,52 @@ export default function Home() {
             </LiquidMetalButton>
 
             {lyrics.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                 <LiquidMetalButton
                   size="sm"
                   variant="dark"
-                  icon={<Copy className="w-3.5 h-3.5 text-neutral-400" />}
+                  icon={<Copy className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-neutral-400" />}
                   onClick={handleCopyLRC}
                 >
-                  Copy Standard
+                  <span className="hidden sm:inline">Copy Standard</span>
+                  <span className="sm:hidden">Standard</span>
                 </LiquidMetalButton>
 
                 <LiquidMetalButton
                   size="sm"
                   variant="dark"
-                  icon={<Copy className="w-3.5 h-3.5 text-neutral-400" />}
+                  icon={<Copy className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-neutral-400" />}
                   onClick={handleCopyEnhancedLRC}
                 >
-                  Copy Word-LRC
+                  <span className="hidden sm:inline">Copy Word-LRC</span>
+                  <span className="sm:hidden">Word-LRC</span>
                 </LiquidMetalButton>
 
                 <LiquidMetalButton
                   size="sm"
                   variant="dark"
-                  icon={<Copy className="w-3.5 h-3.5 text-neutral-400" />}
+                  icon={<Copy className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-neutral-400" />}
                   onClick={handleCopyJSON}
                 >
-                  Copy JSON
+                  <span className="hidden sm:inline">Copy JSON</span>
+                  <span className="sm:hidden">JSON</span>
                 </LiquidMetalButton>
 
                 <LiquidMetalButton
                   size="sm"
                   variant="light"
-                  icon={<Download className="w-3.5 h-3.5" />}
+                  icon={<Download className="w-3 h-3 sm:w-3.5 sm:h-3.5" />}
                   onClick={handleDownloadLRC}
                 >
-                  Download .lrc
+                  <span className="hidden sm:inline">Download .lrc</span>
+                  <span className="sm:hidden">.LRC</span>
                 </LiquidMetalButton>
               </div>
             )}
           </div>
 
           {/* Lyrics View Canvas with Animated ShaderFlow behind Frosted Glass */}
-          <div className="w-full flex-1 flex items-center justify-center py-4">
+          <div className="w-full flex-1 flex items-center justify-center py-2 sm:py-4">
             {lyrics.length > 0 ? (
               <LyricsView
                 lyrics={lyrics}
@@ -425,7 +433,7 @@ export default function Home() {
                 onSeek={handleSeek}
               />
             ) : (
-              <div className="text-neutral-500 font-mono text-sm">No lyrics found for this audio track.</div>
+              <div className="text-neutral-500 font-mono text-xs sm:text-sm">No lyrics found for this audio track.</div>
             )}
           </div>
 
