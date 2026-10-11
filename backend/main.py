@@ -17,18 +17,15 @@ os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 import shutil
 import whisper
 
-# Prevent torchaudio C++ ABI load failure on cloud platforms (Render, Hugging Face Spaces)
-try:
-    import torchaudio._extension.utils as _tau
-    _orig_load_lib = _tau._load_lib
-    def _safe_load_lib(lib):
-        try:
-            return _orig_load_lib(lib)
-        except Exception:
-            return False
-    _tau._load_lib = _safe_load_lib
-except Exception:
-    pass
+# Prevent torchaudio C++ extension load failure on cloud platforms (Render, Hugging Face Spaces)
+# This bypasses loading _torchaudio.abi3.so which fails when libcudart is missing on CPU hosts
+import types
+if "torchaudio._extension" not in sys.modules:
+    _ext_mod = types.ModuleType("torchaudio._extension")
+    _ext_mod._IS_TORCHAUDIO_EXT_AVAILABLE = False
+    _ext_mod._check_cuda_version = lambda: None
+    _ext_mod.fail_if_no_align = lambda x: x
+    sys.modules["torchaudio._extension"] = _ext_mod
 
 import stable_whisper
 import yt_dlp

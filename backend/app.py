@@ -10,18 +10,15 @@ try:
 except Exception:
     pass
 
-# Prevent torchaudio C++ ABI load failure on cloud platforms (Render, Hugging Face Spaces)
-try:
-    import torchaudio._extension.utils as _tau
-    _orig_load_lib = _tau._load_lib
-    def _safe_load_lib(lib):
-        try:
-            return _orig_load_lib(lib)
-        except Exception:
-            return False
-    _tau._load_lib = _safe_load_lib
-except Exception:
-    pass
+# Prevent torchaudio C++ extension load failure on cloud platforms (Render, Hugging Face Spaces)
+import sys
+import types
+if "torchaudio._extension" not in sys.modules:
+    _ext_mod = types.ModuleType("torchaudio._extension")
+    _ext_mod._IS_TORCHAUDIO_EXT_AVAILABLE = False
+    _ext_mod._check_cuda_version = lambda: None
+    _ext_mod.fail_if_no_align = lambda x: x
+    sys.modules["torchaudio._extension"] = _ext_mod
 
 from main import app
 
