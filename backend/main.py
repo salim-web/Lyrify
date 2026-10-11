@@ -1,5 +1,12 @@
 import os
+import sys
 import tempfile
+
+# Auto-detect local virtualenv site-packages if run with system python
+_backend_dir = os.path.dirname(os.path.abspath(__file__))
+_venv_site = os.path.join(_backend_dir, "venv", "lib", f"python{sys.version_info.major}.{sys.version_info.minor}", "site-packages")
+if os.path.exists(_venv_site) and _venv_site not in sys.path:
+    sys.path.insert(0, _venv_site)
 
 # Configure writable cache directory for Triton and CUDA memory allocation
 _triton_cache = os.path.join(tempfile.gettempdir(), ".triton")
@@ -9,6 +16,7 @@ os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
 import shutil
 import whisper
+import stable_whisper
 import yt_dlp
 import subprocess
 import socket
@@ -48,7 +56,7 @@ def compress_audio_for_upload(input_path):
         print(f"Compression failed, using original file: {e}")
         return input_path
 
-def generate_lyrics_gemini(file_path, romanize=False):
+def generate_lyrics_gemini(file_path, romanize=False, lyrics: Optional[str] = None):
     compressed_path = compress_audio_for_upload(file_path)
     print("Uploading to Gemini...")
     audio_file = genai.upload_file(path=compressed_path)
@@ -59,22 +67,56 @@ def generate_lyrics_gemini(file_path, romanize=False):
     else:
         romanize_instruction = "IMPORTANT: Detect the primary language of the song. Transcribe the lyrics accurately in that language's native script (e.g., Devanagari for Hindi)."
 
-    prompt = f"""
-    Listen to this audio and generate the lyrics. 
-    {romanize_instruction}
-    
-    Output the lyrics STRICTLY as a JSON array of objects.
-    Each object must have:
-    "text": The full line of lyrics.
-    "start": The start time of the line in seconds (float).
-    "end": The end time of the line in seconds (float).
-    "words": An array of objects for each word in the line, with:
-        "word": The word text.
-        "start": The start time in seconds (float).
-        "end": The end time in seconds (float).
+    if lyrics and lyrics.strip():
+        clean_lines = [line.strip() for line in lyrics.splitlines() if line.strip()]
+        lyrics_clean_str = "\n".join(clean_lines)
+        print("Gemini: Running forced alignment with provided lyrics...")
+        prompt = f"""
+        You are given an audio file and its reference unsynced lyrics.
+        Your task is FORCED ALIGNMENT: perform strict temporal alignment on the provided lyrics only.
+        You MUST align each word in the provided lyrics to its exact start and end timestamps in the audio.
+        CRITICAL RULES:
+        1. Do NOT transcribe new words.
+        2. Do NOT modify, rephrase, add, or omit any words from the reference lyrics.
+        3. Do NOT hallucinate any words.
+        4. PRESERVE THE EXACT LINE BREAKS: Each line in the provided reference lyrics MUST correspond to exactly ONE line object in the output JSON array with the exact same text. Do NOT merge lines together or split lines.
+        {romanize_instruction}
+        
+        Reference Lyrics:
+        {lyrics_clean_str}
+        
+        Output the aligned lyrics STRICTLY as a JSON array of objects.
+        Each object must have:
+        "text": The full line of lyrics (matching the reference line exactly).
+        "start": The start time of the line in seconds (float).
+        "end": The end time of the line in seconds (float).
+        "words": An array of objects for each word in the line, with:
+            "word": The word text.
+            "start": The start time in seconds (float).
+            "end": The end time in seconds (float).
 
-    Do not include any other text, markdown formatting, or explanation. ONLY output valid JSON.
-    """
+        Do not include any other text, markdown formatting, or explanation. ONLY output valid JSON.
+        """
+        temp = 0.0
+    else:
+        print("Gemini: Running pure ASR transcription...")
+        prompt = f"""
+        Listen to this audio and generate the lyrics. 
+        {romanize_instruction}
+        
+        Output the lyrics STRICTLY as a JSON array of objects.
+        Each object must have:
+        "text": The full line of lyrics.
+        "start": The start time of the line in seconds (float).
+        "end": The end time of the line in seconds (float).
+        "words": An array of objects for each word in the line, with:
+            "word": The word text.
+            "start": The start time in seconds (float).
+            "end": The end time in seconds (float).
+
+        Do not include any other text, markdown formatting, or explanation. ONLY output valid JSON.
+        """
+        temp = 0.2
     
     try:
         print("Calling Gemini model...")
@@ -84,7 +126,7 @@ def generate_lyrics_gemini(file_path, romanize=False):
             request_options={"timeout": 600},
             generation_config=genai.types.GenerationConfig(
                 response_mime_type="application/json",
-                temperature=0.2,
+                temperature=temp,
             )
         )
         text = response.text.strip()
@@ -124,8 +166,8 @@ if not os.path.exists("downloads"):
 
 app.mount("/static", StaticFiles(directory="downloads"), name="static")
 
-# Adaptive model size: "tiny" on memory-constrained cloud hosts (Render 512MB RAM) or "small" locally
-MODEL_SIZE = os.getenv("WHISPER_MODEL", "tiny" if os.getenv("RENDER") else "small")
+# Whisper model size (defaults to "small", can be overridden by WHISPER_MODEL env var)
+MODEL_SIZE = os.getenv("WHISPER_MODEL", "small")
 model = None
 
 # ZeroGPU support for Hugging Face Spaces
@@ -135,24 +177,45 @@ try:
 except (ImportError, Exception):
     has_spaces = False
 
-def _transcribe_func(whisper_model, audio_path):
-    return whisper_model.transcribe(audio_path, word_timestamps=True)
+def _whisper_pipeline(whisper_model, audio_path, lyrics=None):
+    if lyrics and lyrics.strip():
+        print("Offline mode: Running forced alignment via stable-ts model.align()...")
+        clean_lines = [line.strip() for line in lyrics.splitlines() if line.strip()]
+        clean_text = "\n".join(clean_lines)
+        align_kwargs = {
+            "original_split": True,
+            "max_word_dur": 4.0,
+            "nonspeech_skip": 3.0,
+        }
+        try:
+            return whisper_model.align(audio_path, clean_text, language=None, **align_kwargs)
+        except TypeError:
+            import whisper
+            audio = whisper.load_audio(audio_path)
+            audio = whisper.pad_or_trim(audio)
+            mel = whisper.log_mel_spectrogram(audio).to(whisper_model.device)
+            _, probs = whisper_model.detect_language(mel)
+            detected_lang = max(probs, key=probs.get)
+            return whisper_model.align(audio_path, clean_text, language=detected_lang, **align_kwargs)
+    else:
+        print("Offline mode: Running standard ASR transcription...")
+        return whisper_model.transcribe(audio_path, word_timestamps=True)
 
 if has_spaces:
     try:
-        run_whisper_transcribe = spaces.GPU(_transcribe_func)
+        run_whisper_pipeline = spaces.GPU(_whisper_pipeline)
     except Exception:
-        run_whisper_transcribe = _transcribe_func
+        run_whisper_pipeline = _whisper_pipeline
 else:
-    run_whisper_transcribe = _transcribe_func
+    run_whisper_pipeline = _whisper_pipeline
 
 def get_model():
     global model
     if model is None:
         import torch
-        device = "cuda" if torch.cuda.is_available() else "cpu"
+        device = "cuda:0" if torch.cuda.is_available() else "cpu"
         print(f"Loading Whisper model: {MODEL_SIZE} on device: {device.upper()}...")
-        model = whisper.load_model(MODEL_SIZE, device=device)
+        model = stable_whisper.load_model(MODEL_SIZE, device=device)
         print("Model loaded.")
     return model
 
@@ -171,21 +234,20 @@ def read_root():
 
 from anyascii import anyascii
 
-# ... imports ...
-
-from anyascii import anyascii # We'll just remove usages, imports are fine to stay or go. Actually let's remove the import line if possible or just ignore it.
-# Let's write the clean version of the affected functions.
-
 class LinkRequest(BaseModel):
     url: str
     mode: Optional[str] = "online"
     romanize: Optional[bool] = False
+    lyrics: Optional[str] = None
 
 def format_transcript(result, romanize=False):
     """
-    Format standard Whisper output into a clean list of segments
-    with word-level timestamps.
+    Format standard Whisper / stable-ts output into a clean list of segments
+    with word-level timestamps, enforcing positive durations and avoiding
+    over-stretched instrumental pauses.
     """
+    if hasattr(result, "to_dict"):
+        result = result.to_dict()
     from anyascii import anyascii
     lyrics = []
     segments = result.get("segments", [])
@@ -193,28 +255,64 @@ def format_transcript(result, romanize=False):
     for segment in segments:
         words = segment.get("words", [])
         line_text = segment.get("text", "").strip()
+        if not line_text:
+            continue
         if romanize:
             line_text = anyascii(line_text)
         
-        if not words:
-            lyrics.append({
-                "text": line_text,
-                "start": segment["start"],
-                "end": segment["end"],
-                "words": [] 
-            })
-            continue
-            
+        seg_start = float(segment.get("start", 0.0))
+        seg_end = float(segment.get("end", seg_start))
+        
+        formatted_words = []
+        if words:
+            for w in words:
+                w_text = w.get("word", "").strip()
+                if not w_text:
+                    continue
+                if romanize:
+                    w_text = anyascii(w_text)
+                w_start = float(w.get("start", seg_start))
+                w_end = float(w.get("end", w_start))
+                if w_end < w_start:
+                    w_end = w_start
+                formatted_words.append({
+                    "word": w_text,
+                    "start": w_start,
+                    "end": w_end
+                })
+
+            # Word timestamp refinement:
+            # If any words collapsed to 0 duration (start == end), interpolate them smoothly
+            for idx in range(len(formatted_words)):
+                curr_w = formatted_words[idx]
+                if curr_w["end"] <= curr_w["start"]:
+                    if idx + 1 < len(formatted_words) and formatted_words[idx + 1]["start"] > curr_w["start"]:
+                        curr_w["end"] = formatted_words[idx + 1]["start"]
+                    else:
+                        curr_w["end"] = curr_w["start"] + 0.35
+
+            # Prevent huge instrumental gaps from keeping the line active on screen
+            if formatted_words:
+                first_word_start = formatted_words[0]["start"]
+                last_word_end = formatted_words[-1]["end"]
+                if first_word_start < seg_start:
+                    seg_start = first_word_start
+                if seg_end > last_word_end + 2.0:
+                    seg_end = last_word_end + 1.0
+
+        if seg_end <= seg_start:
+            seg_end = seg_start + 1.5
+
         lyrics.append({
             "text": line_text,
-            "start": segment["start"],
-            "end": segment["end"],
+            "start": round(seg_start, 2),
+            "end": round(seg_end, 2),
             "words": [
                 {
-                    "word": anyascii(w["word"].strip()) if romanize else w["word"].strip(),
-                    "start": w["start"],
-                    "end": w["end"]
-                } for w in words
+                    "word": w["word"],
+                    "start": round(w["start"], 2),
+                    "end": round(w["end"], 2)
+                } for w in formatted_words
             ]
         })
     return lyrics
@@ -222,21 +320,27 @@ def format_transcript(result, romanize=False):
 from fastapi import FastAPI, UploadFile, File, HTTPException, Form
 
 @app.post("/transcribe/upload")
-async def transcribe_upload(file: UploadFile = File(...), mode: str = Form("online"), romanize: str = Form("false")):
+async def transcribe_upload(
+    file: UploadFile = File(...), 
+    mode: str = Form("online"), 
+    romanize: str = Form("false"),
+    lyrics: Optional[str] = Form(None)
+):
     is_romanize = romanize.lower() == "true"
+    cleaned_lyrics = lyrics.strip() if lyrics and lyrics.strip() else None
     # Save temp file
     temp_filename = f"temp_{file.filename}"
     try:
         with open(temp_filename, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
             
-        print(f"Transcribing Upload: {temp_filename} in {mode} mode")
+        print(f"Transcribing Upload: {temp_filename} in {mode} mode (forced_alignment={cleaned_lyrics is not None})")
         
         if mode == "online" and check_connection():
             try:
                 print("Online mode: Using Gemini...")
-                lyrics = generate_lyrics_gemini(temp_filename, romanize=is_romanize)
-                return {"lyrics": lyrics}
+                lyrics_data = generate_lyrics_gemini(temp_filename, romanize=is_romanize, lyrics=cleaned_lyrics)
+                return {"lyrics": lyrics_data}
             except Exception as e:
                 print(f"Gemini transcription failed: {e}")
                 raise HTTPException(status_code=500, detail=f"Gemini API Error: {str(e)}")
@@ -244,8 +348,7 @@ async def transcribe_upload(file: UploadFile = File(...), mode: str = Form("onli
             print(f"{'Manual ' if mode == 'offline' else ''}Offline mode: Using Whisper...")
             
         model = get_model()
-        # Enable word timestamps!
-        result = run_whisper_transcribe(model, temp_filename)
+        result = run_whisper_pipeline(model, temp_filename, lyrics=cleaned_lyrics)
         
         return {"lyrics": format_transcript(result, romanize=is_romanize)}
 
@@ -290,7 +393,8 @@ async def transcribe_link(request: LinkRequest, http_request: Request):
 
         mode = request.mode
         is_romanize = request.romanize
-        print(f"Processing link in {mode} mode (romanize={is_romanize})")
+        cleaned_lyrics = request.lyrics.strip() if request.lyrics and request.lyrics.strip() else None
+        print(f"Processing link in {mode} mode (romanize={is_romanize}, forced_alignment={cleaned_lyrics is not None})")
 
         base_url = os.getenv("BASE_URL", str(http_request.base_url).rstrip("/"))
         audio_url = f"{base_url}/static/{output_filename}"
@@ -298,9 +402,9 @@ async def transcribe_link(request: LinkRequest, http_request: Request):
         if mode == "online" and check_connection():
             try:
                 print("Online mode: Using Gemini...")
-                lyrics = generate_lyrics_gemini(output_path, romanize=is_romanize)
+                lyrics_data = generate_lyrics_gemini(output_path, romanize=is_romanize, lyrics=cleaned_lyrics)
                 return {
-                    "lyrics": lyrics,
+                    "lyrics": lyrics_data,
                     "audio_url": audio_url
                 }
             except Exception as e:
@@ -311,7 +415,7 @@ async def transcribe_link(request: LinkRequest, http_request: Request):
 
         print("Transcribing Downloaded File...")
         model = get_model()
-        result = run_whisper_transcribe(model, output_path)
+        result = run_whisper_pipeline(model, output_path, lyrics=cleaned_lyrics)
         
         return {
             "lyrics": format_transcript(result, romanize=is_romanize), 

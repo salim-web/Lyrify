@@ -1,6 +1,7 @@
 fastapi
 uvicorn
 openai-whisper
+stable-ts>=2.16.0
 yt-dlp
 python-multipart
 torch

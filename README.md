@@ -20,8 +20,10 @@
 
 3. Run the server:
    ```bash
+   source venv/bin/activate
    uvicorn main:app --reload
    ```
+   *(Or alternatively: `./venv/bin/uvicorn main:app --reload`)*
    The backend will start at `http://localhost:8000`.
 
 ## Frontend (Next.js)

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import axios from "axios";
-import { Upload, Link as LinkIcon, Music, Loader2 } from "lucide-react";
+import { Upload, Link as LinkIcon, Music, Loader2, FileText, ChevronDown, ChevronUp } from "lucide-react";
 import LyricsView from "@/components/LyricsView";
 import Player from "@/components/Player";
 
@@ -21,6 +21,8 @@ export default function Home() {
   const [language, setLanguage] = useState<string>("");
   const [seekTo, setSeekTo] = useState<number | null>(null);
   const [transcribeMode, setTranscribeMode] = useState<"online" | "offline">("online");
+  const [lyricsInput, setLyricsInput] = useState("");
+  const [showLyricsInput, setShowLyricsInput] = useState(false);
 
   const handleSeek = (time: number) => {
     setSeekTo(time);
@@ -41,6 +43,9 @@ export default function Home() {
     formData.append("file", file);
     formData.append("romanize", romanize.toString());
     formData.append("mode", transcribeMode);
+    if (lyricsInput.trim()) {
+      formData.append("lyrics", lyricsInput.trim());
+    }
 
     try {
       const response = await axios.post(`${API_BASE_URL}/transcribe/upload`, formData, {
@@ -67,11 +72,16 @@ export default function Home() {
     setAudioSrc(null); // Clear previous
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/transcribe/link`, {
+      const payload: { url: string; romanize: boolean; mode: "online" | "offline"; lyrics?: string } = {
         url,
         romanize,
-        mode: transcribeMode
-      });
+        mode: transcribeMode,
+      };
+      if (lyricsInput.trim()) {
+        payload.lyrics = lyricsInput.trim();
+      }
+
+      const response = await axios.post(`${API_BASE_URL}/transcribe/link`, payload);
       setLyrics(response.data.lyrics);
 
       // Use the unique URL returned by the backend (handling relative or absolute)
@@ -205,6 +215,51 @@ export default function Home() {
               </div>
             </div>
 
+            {/* Optional Unsynced Lyrics Card */}
+            <div className="w-full max-w-md mx-auto">
+              <button
+                type="button"
+                onClick={() => setShowLyricsInput(!showLyricsInput)}
+                className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-gray-300 transition-colors"
+              >
+                <span className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-pink-400" />
+                  Paste Unsynced Lyrics (Optional)
+                  {lyricsInput.trim() && (
+                    <span className="w-2 h-2 rounded-full bg-pink-500 animate-pulse" />
+                  )}
+                </span>
+                <span className="text-gray-400 text-xs font-normal flex items-center gap-1">
+                  {lyricsInput.trim() ? "Lyrics Added" : (showLyricsInput ? "Hide" : "Add Lyrics")}
+                  {showLyricsInput ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </span>
+              </button>
+
+              {showLyricsInput && (
+                <div className="mt-2 space-y-2 text-left">
+                  <textarea
+                    value={lyricsInput}
+                    onChange={(e) => setLyricsInput(e.target.value)}
+                    placeholder="Paste plain unsynced lyrics here to run strict forced alignment (timing alignment only, no hallucination)..."
+                    rows={4}
+                    className="w-full p-3 rounded-xl bg-white/5 border border-white/10 focus:border-pink-500 focus:outline-none text-sm text-gray-200 placeholder-gray-500 transition-colors resize-y font-mono"
+                  />
+                  {lyricsInput.trim() && (
+                    <div className="flex justify-between items-center text-xs text-gray-400 px-1">
+                      <span className="text-pink-400 font-medium">✓ Forced Alignment will be used</span>
+                      <button
+                        type="button"
+                        onClick={() => setLyricsInput("")}
+                        className="text-gray-500 hover:text-gray-300 underline"
+                      >
+                        Clear lyrics
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             <div className="flex flex-col gap-6 w-full max-w-md mx-auto">
               {/* File Upload */}
               <label className="flex items-center justify-center gap-3 w-full p-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 cursor-pointer transition-all group">
@@ -245,10 +300,14 @@ export default function Home() {
           <div className="flex flex-col items-center gap-4 animate-pulse">
             <Loader2 className="w-12 h-12 animate-spin text-pink-500" />
             <p className="text-lg font-medium text-gray-300">
-              Generating Lyrics with {transcribeMode === "online" ? "Gemini 2.5 Flash" : "Local Whisper"}...
+              {lyricsInput.trim()
+                ? `Aligning Lyrics with ${transcribeMode === "online" ? "Gemini 2.5 Flash" : "Local Whisper"} (Forced Alignment)...`
+                : `Generating Lyrics with ${transcribeMode === "online" ? "Gemini 2.5 Flash" : "Local Whisper"}...`}
             </p>
             <p className="text-sm text-gray-500">
-              {transcribeMode === "online" ? "Processing via Cloud API" : "Processing locally on your device"}
+              {lyricsInput.trim()
+                ? "Aligning timestamps to provided lyrics"
+                : (transcribeMode === "online" ? "Processing via Cloud API" : "Processing locally on your device")}
             </p>
           </div>
         )}
